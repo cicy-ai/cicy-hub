@@ -8,8 +8,9 @@
 
 services:
   hub:
-    # Released image (docker compose up -d pulls it). To build from source
-    # instead, run:  docker compose up -d --build
+    # `docker compose up -d` BUILDS this from source (deps are public) and tags it
+    # as the image below. To use the prebuilt release instead (once it's public):
+    #   docker compose pull && docker compose up -d
     image: "ghcr.io/cicy-ai/cicy-hub:${CICY_HUB_TAG:-latest}"
     build: .
     container_name: cicy-hub

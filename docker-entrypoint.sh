@@ -103,14 +103,14 @@ case "$cmd" in
     ttl="${3:-$NODE_TTL}"
     tok="$(mint node -org "$ORG" -id "$slug" -ttl "$ttl" -priv "$KEY")"
     url="wss://$slug.hub.$DOMAIN/_tunnel/connect"
-    insecure=false
-    [ "$TLS_MODE" = "selfsigned" ] && insecure=true   # self-signed → node must skip TLS verify
-    echo "# Option A (recommended) — save as the node's ~/cicy-ai/db/tunnel.json, then just run cicy-code (no flags):"
-    echo "{\"url\":\"$url\",\"token\":\"$tok\",\"insecure\":$insecure}"
-    echo
-    echo "# Option B — env (containers / CI):"
-    echo "CICY_TUNNEL_URL=$url"
-    echo "CICY_TUNNEL_TOKEN=$tok"
+    ins=""
+    [ "$TLS_MODE" = "selfsigned" ] && ins=" -insecure"   # self-signed → dialer must skip TLS verify
+    echo "# On '$slug' (running cicy-code on :8008) install the dialer once:"
+    echo "#   go install github.com/cicy-ai/cicy-tunnel/cmd/node@latest"
+    echo "#   mv \"\$(go env GOPATH)/bin/node\" /usr/local/bin/cicy-node"
+    echo "# then run this (it injects THIS box's local api_token; run it under a supervisor):"
+    echo "cicy-node -gateway $url -token $tok -local 127.0.0.1:8008$ins \\"
+    echo "  -inject-token \"\$(sed -n 's/.*\"api_token\" *: *\"\\([^\"]*\\)\".*/\\1/p' ~/cicy-ai/global.json)\""
     ;;
   grant)
     # Mint a hub token (typ=hub) with THIS hub's own private key — the access
@@ -119,7 +119,7 @@ case "$cmd" in
     # and self-verified: no external issuer.
     need_domain
     ensure_keypair
-    ttl="${2:-$NODE_TTL}"
+    ttl="${2:-720h}"     # 30 days — this is the credential you hand out; keep it short-ish
     tok="$(mint hub -org "$ORG" -ttl "$ttl" -priv "$KEY")"
     echo "# hub token — org=$ORG, ttl=$ttl. A client reaches any team in this org with it:"
     echo "$tok"

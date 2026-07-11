@@ -33,7 +33,10 @@ tunnel — exactly as if you were on its `localhost`.
 ## What you need
 
 1. A **domain** you control (e.g. `example.com`).
-2. A **wildcard DNS record**: `*.hub.example.com` → your server's public IP.
+2. **Two DNS records**, both → your server's public IP:
+   - `hub.example.com` — the hub itself (console, app, API).
+   - `*.hub.example.com` — one per machine (`<name>.hub.example.com`). A wildcard does
+     **not** cover the apex, so you need the `hub.example.com` record *as well*.
 3. A **server** with **port 443** free and **Docker** installed.
 
 That's the whole manual checklist. Everything below is copy-paste.
@@ -46,13 +49,14 @@ That's the whole manual checklist. Everything below is copy-paste.
 DOMAIN=example.com docker compose up -d
 ```
 
-This pulls the released image and serves `*.hub.example.com` on `:443` with a
-self-signed cert (instant, great for testing — browsers show a "not private" warning
-you can click through). Want a browser-trusted cert? See
-[Trusted certificate](#trusted-certificate-lets-encrypt) below.
+First run **builds the image from source** (~1–2 min; all dependencies are public),
+then serves `*.hub.example.com` on `:443` with a self-signed cert (instant, great for
+testing — browsers show a "not private" warning you can click through). Want a
+browser-trusted cert? See [Trusted certificate](#trusted-certificate-lets-encrypt) below.
 
-> Building from source instead of pulling? Add `--build`:
-> `DOMAIN=example.com docker compose up -d --build`
+> Want the prebuilt image instead of building? Once the
+> [released image](#releasing) is published **and public**, pull it first:
+> `docker compose pull && DOMAIN=example.com docker compose up -d`
 
 **Check it's alive:**
 
@@ -65,18 +69,26 @@ curl -k https://hub.example.com/_gw/health
 
 ## 2 · Connect a machine
 
-On the hub, mint that machine a **node token** and get its dial URL:
+On the hub, mint that machine a **node token** and print the exact command to run on it:
 
 ```sh
 docker compose exec hub enroll mac13
 ```
 
-Then, **on the machine** (`mac13`, running cicy-code on `:8008`), run the small
-dialer. It dials out with the node token and injects the machine's *local*
-`api_token`, so the hub never needs it:
+Then, **on the machine** (`mac13`, running cicy-code on `:8008`), install the dialer
+once — it lives in the public `cicy-tunnel` module. Its binary is named `node`, which
+would clash with Node.js, so install it as `cicy-node`:
 
 ```sh
-node \
+go install github.com/cicy-ai/cicy-tunnel/cmd/node@latest
+mv "$(go env GOPATH)/bin/node" /usr/local/bin/cicy-node
+```
+
+Now run the command `enroll` printed. It dials out with the node token and injects the
+machine's *local* `api_token`, so the hub never needs it:
+
+```sh
+cicy-node \
   -gateway wss://mac13.hub.example.com/_tunnel/connect \
   -token   <node-token-from-enroll> \
   -local   127.0.0.1:8008 \
@@ -87,8 +99,8 @@ node \
 - `-inject-token` is the whole security trick: the caller presents a **hub** token;
   the dialer swaps in this machine's **local** api_token before handing the request to
   cicy-code — so the api_token stays on the box.
-- The **`hub-tunnel` helper skill** ships this `node` binary and installs it as an
-  auto-restart service (launchd / supervisor), so you don't run it by hand.
+- Run it under a supervisor (launchd / systemd / supervisord) so it auto-restarts and
+  survives reboots — it's a long-running service, not a one-shot.
 
 **Check the machine is up** — the hub logs `tunnel up self/mac13`:
 
@@ -105,7 +117,7 @@ Repeat for every machine (`enroll win10`, `enroll server-1`, …).
 One **hub token** reaches every machine in your org:
 
 ```sh
-docker compose exec hub grant 720h    # 30 days; omit for the default
+docker compose exec hub grant          # 30-day token; pass e.g. `grant 168h` for shorter
 ```
 
 Copy the printed token. (Lost it? Just `grant` another — they're independent.)
@@ -242,9 +254,16 @@ git push origin v1.0.0
 ```
 
 The [release workflow](.github/workflows/release.yml) builds and pushes
-`ghcr.io/cicy-ai/cicy-hub:1.0.0`, `:1.0`, and `:latest`. Then on any server:
+`ghcr.io/cicy-ai/cicy-hub:1.0.0`, `:1.0`, and `:latest`.
+
+> New packages are **private** by default. To let servers `pull` without a login,
+> make the package **Public** once (GitHub → your packages → `cicy-hub` → Package
+> settings → Change visibility).
+
+Then run the released image on any server (`pull` uses the registry instead of building):
 
 ```sh
+CICY_HUB_TAG=1.0.0 DOMAIN=example.com docker compose pull
 CICY_HUB_TAG=1.0.0 DOMAIN=example.com docker compose up -d
 ```
 
