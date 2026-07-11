@@ -1,0 +1,10 @@
+github.com/cicy-ai/cicy-tunnel v0.1.1 h1:REvhwYONKYgF3XhKz4w1BmhGAgqy1ORtFpFksbtg1Xk=
+github.com/cicy-ai/cicy-tunnel v0.1.1/go.mod h1:oISXoOoGgq96WzIHf5CRjPoabryyYhEp95D/p+SIuH0=
+github.com/cicy-ai/cicy-tunnel v0.2.0 h1:lt6wSGh2glVHveS2lSpr7gMoTwf2+yYhMJWNshkQWlU=
+github.com/cicy-ai/cicy-tunnel v0.2.0/go.mod h1:oISXoOoGgq96WzIHf5CRjPoabryyYhEp95D/p+SIuH0=
+github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=
+github.com/coder/websocket v1.8.15/go.mod h1:NX3SzP+inril6yawo5CQXx8+fk145lPDC6pumgx0mVg=
+github.com/golang-jwt/jwt/v5 v5.3.1 h1:kYf81DTWFe7t+1VvL7eS+jKFVWaUnK9cB1qbwn63YCY=
+github.com/golang-jwt/jwt/v5 v5.3.1/go.mod h1:fxCRLWMO43lRc8nhHWY6LGqRcf+1gQWArsqaEUEa5bE=
+github.com/hashicorp/yamux v0.1.2 h1:XtB8kyFOyHXYVFnwT5C3+Bdo8gArse7j2AQ0DA0Uey8=
+github.com/hashicorp/yamux v0.1.2/go.mod h1:C+zze2n6e/7wshOZep2A70/aQU6QBRWJO/G6FT1wIns=

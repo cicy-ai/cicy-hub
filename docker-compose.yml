@@ -1,0 +1,32 @@
+# cicy-hub — one-command self-hosted zero-trust tunnel relay.
+#
+#   DOMAIN=example.com docker compose up -d          # self-signed (instant, test)
+#   docker compose exec hub enroll my-mac          # get a node's dial config
+#
+# For a browser-trusted cert, set TLS_MODE=letsencrypt + the DNS provider env below.
+# See README.md.
+
+services:
+  hub:
+    build: .
+    image: cicy-hub:latest
+    container_name: cicy-hub
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    environment:
+      # ── required ──
+      DOMAIN: "${DOMAIN:?set DOMAIN, e.g. DOMAIN=example.com}"   # serves *.hub.$DOMAIN
+      # ── optional ──
+      ORG: "${ORG:-self}"                       # logical owner of the nodes
+      LICENSE_MAX_NODES: "${LICENSE_MAX_NODES:-50}"
+      TLS_MODE: "${TLS_MODE:-selfsigned}"       # selfsigned | letsencrypt | custom
+      # ── Let's Encrypt (only when TLS_MODE=letsencrypt) ──
+      ACME_EMAIL: "${ACME_EMAIL:-}"
+      LEGO_PROVIDER: "${LEGO_PROVIDER:-}"       # e.g. cloudflare, route53, gcloud …
+      CF_DNS_API_TOKEN: "${CF_DNS_API_TOKEN:-}" # example: Cloudflare. Swap for your provider's env.
+    volumes:
+      - gwdata:/data                            # persists keys, cert, license across restarts
+
+volumes:
+  gwdata:

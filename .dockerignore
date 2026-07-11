@@ -1,0 +1,11 @@
+.git
+*.pem
+*.jwt
+*.bak*
+gateway
+gateway.transparent
+gateway-linux-amd64
+/data
+node_modules
+*.md
+!README.md

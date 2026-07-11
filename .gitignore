@@ -1,0 +1,11 @@
+# binaries
+/hub
+/reporter
+cmd/*/*.test
+# secrets / local
+*.pem
+*.jwt
+license.jwt
+tls-cert.pem
+tls-key.pem
+/data
