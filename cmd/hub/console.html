@@ -335,7 +335,13 @@
   $("#tokIn").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#goBtn").click(); });
 
   applyLang();
+  var urlTok = null; try { urlTok = new URLSearchParams(location.search).get("token"); } catch (e) {}
   var saved = null; try { saved = localStorage.getItem(LS); } catch (e) {}
-  if (saved) loadLive(saved);
+  if (urlTok) {
+    try { localStorage.setItem(LS, urlTok); } catch (e) {}
+    // drop the token from the address bar so it isn't left in history/screenshots
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+    loadLive(urlTok);
+  } else if (saved) loadLive(saved);
 })();
 </script>

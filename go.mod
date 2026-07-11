@@ -3,7 +3,7 @@ module github.com/cicy-ai/cicy-hub
 go 1.23
 
 require (
-	github.com/cicy-ai/cicy-tunnel v0.2.0
+	github.com/cicy-ai/cicy-tunnel v0.2.3
 	github.com/coder/websocket v1.8.15
 )
 

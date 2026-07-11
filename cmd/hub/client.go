@@ -51,7 +51,13 @@ func (m *mobileClient) write(ctx context.Context, v interface{}) error {
 // clientHandler upgrades a hubToken-authenticated mobile socket, pushes the
 // directory, streams presence upserts, and services subscribe/unsubscribe/
 // history_req/send frames.
-func clientHandler(pres *presence, reg *relay.Registry, pub *rsa.PublicKey, hubDomain string) http.HandlerFunc {
+func clientHandler(pres *presence, reg *relay.Registry, pub *rsa.PublicKey, hubDomain string, webOrigins []string) http.HandlerFunc {
+	// Browser WS clients send an Origin the JS can't remove; coder/websocket rejects
+	// cross-origin by default (CSRF). Whitelist the hub's own host + localhost (dev)
+	// + any configured web origins. Native clients send no Origin and are allowed.
+	// Auth is still the hub token — the Origin check is only CSRF defense in depth.
+	patterns := append([]string{"localhost:*", "127.0.0.1:*", "[::1]:*", hubDomain, "*." + hubDomain}, webOrigins...)
+	acceptOpts := &websocket.AcceptOptions{OriginPatterns: patterns}
 	return func(w http.ResponseWriter, r *http.Request) {
 		cl, err := token.Verify(pub, relay.Bearer(r), token.TypHub)
 		if err != nil {
@@ -59,7 +65,7 @@ func clientHandler(pres *presence, reg *relay.Registry, pub *rsa.PublicKey, hubD
 			return
 		}
 		callerOrg := cl.Org // "" = self-host hub credential (no tenant boundary)
-		c, err := websocket.Accept(w, r, nil)
+		c, err := websocket.Accept(w, r, acceptOpts)
 		if err != nil {
 			return
 		}
