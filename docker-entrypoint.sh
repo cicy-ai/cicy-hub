@@ -87,6 +87,11 @@ case "$cmd" in
     ensure_keypair
     ensure_license
     ensure_tls
+    # The hub binary reads these from the env: the agent directory builds each
+    # team's reach_url as https://<slug>.$HUB_DOMAIN, and the web UI / mobile WS
+    # allow these extra browser origins (comma-separated) on top of same-origin.
+    export HUB_DOMAIN="hub.$DOMAIN"
+    export HUB_WEB_ORIGINS="${HUB_WEB_ORIGINS:-}"
     echo "[entrypoint] starting gateway on $ADDR — nodes dial wss://<slug>.hub.$DOMAIN/_tunnel/connect"
     exec hub -addr "$ADDR" -cert "$CRT" -key "$CRTKEY" -pub "$PUB" -license "$LIC"
     ;;

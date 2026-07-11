@@ -8,8 +8,10 @@
 
 services:
   hub:
+    # Released image (docker compose up -d pulls it). To build from source
+    # instead, run:  docker compose up -d --build
+    image: "ghcr.io/cicy-ai/cicy-hub:${CICY_HUB_TAG:-latest}"
     build: .
-    image: cicy-hub:latest
     container_name: cicy-hub
     restart: unless-stopped
     ports:
@@ -21,6 +23,7 @@ services:
       ORG: "${ORG:-self}"                       # logical owner of the nodes
       LICENSE_MAX_NODES: "${LICENSE_MAX_NODES:-50}"
       TLS_MODE: "${TLS_MODE:-selfsigned}"       # selfsigned | letsencrypt | custom
+      HUB_WEB_ORIGINS: "${HUB_WEB_ORIGINS:-}"   # extra browser origins for the web UI (comma-sep)
       # ── Let's Encrypt (only when TLS_MODE=letsencrypt) ──
       ACME_EMAIL: "${ACME_EMAIL:-}"
       LEGO_PROVIDER: "${LEGO_PROVIDER:-}"       # e.g. cloudflare, route53, gcloud …
