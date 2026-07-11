@@ -206,9 +206,6 @@ docker compose exec hub grant [ttl]   # mint an access (hub) token
 | `/_presence` | a machine's reporter | **node token** — pushes that machine's agent list |
 | `/_msg` | a machine (agent) | **node token** — cross-machine message routing |
 
-See [`docs/mobile-integration.md`](docs/mobile-integration.md) for the `/_agents` and
-`/_client` payload shapes (building an app against the hub).
-
 ---
 
 ## The three tokens
