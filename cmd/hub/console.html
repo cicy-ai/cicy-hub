@@ -1,0 +1,341 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cicy-hub console</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --surface: #ffffff; --surface-2: #eef1f4;
+    --ink: #16202b; --muted: #5b6b7a; --faint: #8b9aa8;
+    --line: #dde3e9; --line-strong: #cdd6de;
+    --accent: #0d7d72; --accent-ink: #0b5f57;
+    --ok: #15803d; --busy: #b45309; --off: #94a3b8; --err: #c0392b;
+    --ok-bg: #e5f3ea; --busy-bg: #f7ecdb; --off-bg: #eceff2; --err-bg: #f7e4e2;
+    --shadow: 0 1px 2px rgba(16,32,43,.05), 0 1px 0 rgba(16,32,43,.02);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d141b; --surface: #131e28; --surface-2: #0f1922;
+      --ink: #e2e9ef; --muted: #8ba0af; --faint: #5f7383;
+      --line: #223140; --line-strong: #2c3f50;
+      --accent: #3ec6b6; --accent-ink: #58d6c7;
+      --ok: #4ade80; --busy: #fbbf24; --off: #64748b; --err: #f87171;
+      --ok-bg: #10261a; --busy-bg: #2a2110; --off-bg: #182430; --err-bg: #2b1616;
+      --shadow: 0 1px 2px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f6f8; --surface: #ffffff; --surface-2: #eef1f4;
+    --ink: #16202b; --muted: #5b6b7a; --faint: #8b9aa8;
+    --line: #dde3e9; --line-strong: #cdd6de;
+    --accent: #0d7d72; --accent-ink: #0b5f57;
+    --ok: #15803d; --busy: #b45309; --off: #94a3b8; --err: #c0392b;
+    --ok-bg: #e5f3ea; --busy-bg: #f7ecdb; --off-bg: #eceff2; --err-bg: #f7e4e2;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d141b; --surface: #131e28; --surface-2: #0f1922;
+    --ink: #e2e9ef; --muted: #8ba0af; --faint: #5f7383;
+    --line: #223140; --line-strong: #2c3f50;
+    --accent: #3ec6b6; --accent-ink: #58d6c7;
+    --ok: #4ade80; --busy: #fbbf24; --off: #64748b; --err: #f87171;
+    --ok-bg: #10261a; --busy-bg: #2a2110; --off-bg: #182430; --err-bg: #2b1616;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 15px/1.5 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px 64px; }
+
+  header {
+    position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+  }
+  .bar { max-width: 1080px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+  .mark { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -.01em; }
+  .glyph { width: 22px; height: 22px; flex: none; }
+  .mark small { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .bar .spacer { flex: 1; }
+  .conn { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+  .conn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--off); }
+  .conn.live .dot { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-bg); }
+  .conn.sample .dot { background: var(--busy); box-shadow: 0 0 0 3px var(--busy-bg); }
+  .lang { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 7px; overflow: hidden; }
+  .lang button { font: inherit; font-size: 12px; padding: 5px 9px; background: var(--surface); color: var(--muted); border: 0; cursor: pointer; }
+  .lang button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  button.tok {
+    font: inherit; font-size: 12.5px; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line-strong); border-radius: 7px; padding: 6px 11px; cursor: pointer;
+  }
+  button.tok:hover { border-color: var(--accent); color: var(--accent-ink); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .lede { padding: 30px 0 20px; }
+  .lede h1 { margin: 0 0 6px; font-size: clamp(21px, 3.3vw, 29px); font-weight: 620; letter-spacing: -.02em; text-wrap: balance; }
+  .lede p { margin: 0; color: var(--muted); max-width: 64ch; }
+
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line);
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
+  .stat { background: var(--surface); padding: 16px 18px; }
+  .stat .n { font-size: 30px; font-weight: 600; letter-spacing: -.02em; line-height: 1; }
+  .stat .n small { font-size: 15px; color: var(--faint); font-weight: 500; }
+  .stat .k { margin-top: 6px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .note { color: var(--faint); font-size: 12.5px; margin: 10px 2px 30px; }
+
+  .team { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .team > .th { display: flex; align-items: baseline; gap: 12px; padding: 15px 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .team .slug { font-weight: 600; font-size: 16px; letter-spacing: -.01em; }
+  .team .slug b { color: var(--accent-ink); font-weight: 600; }
+  .org { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+    border: 1px solid var(--line-strong); border-radius: 5px; padding: 2px 7px; }
+  .th .reach { margin-left: auto; font-size: 12.5px; color: var(--muted); }
+  .th .count { font-size: 12.5px; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .scroll { overflow-x: auto; }
+  thead th { text-align: left; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    font-weight: 600; padding: 9px 18px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  tbody td { padding: 10px 18px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--surface-2); }
+  .st { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .st .d { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .st.ok .d { background: var(--ok); } .st.busy .d { background: var(--busy); }
+  .st.off .d { background: var(--off); } .st.err .d { background: var(--err); }
+  .st .lab { font-size: 12px; color: var(--muted); }
+  .title { font-weight: 500; }
+  .chip { font-size: 11px; color: var(--muted); border: 1px solid var(--line-strong); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+  .chip.cicy { color: var(--accent-ink); border-color: color-mix(in srgb, var(--accent) 45%, var(--line-strong)); }
+  .ctx { display: flex; align-items: center; gap: 8px; min-width: 92px; }
+  .ctx .track { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .ctx .fill { height: 100%; background: var(--accent); }
+  .ctx .pct { font-size: 11.5px; color: var(--muted); width: 30px; text-align: right; }
+
+  .auth { margin-top: 34px; }
+  .auth h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  .layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .layer { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; padding: 15px 16px; box-shadow: var(--shadow); }
+  .layer .n { font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent-ink); }
+  .layer h3 { margin: 6px 0 5px; font-size: 14px; font-weight: 600; }
+  .layer p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .layer code, .flow code { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--ink); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .flow { margin-top: 14px; font-size: 12.5px; color: var(--faint); line-height: 1.7; }
+  .flow b { color: var(--muted); font-weight: 600; }
+
+  dialog { border: 1px solid var(--line-strong); border-radius: 12px; padding: 0; background: var(--surface); color: var(--ink); box-shadow: 0 12px 40px rgba(0,0,0,.25); max-width: 440px; width: calc(100% - 40px); }
+  dialog::backdrop { background: rgba(8,14,20,.5); }
+  .dlg { padding: 20px; }
+  .dlg h3 { margin: 0 0 6px; font-size: 16px; }
+  .dlg p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+  .dlg input { width: 100%; font: inherit; font-size: 13px; padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--bg); color: var(--ink); }
+  .dlg .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  .dlg button { font: inherit; font-size: 13px; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+  .dlg button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+
+  @media (max-width: 720px) {
+    .summary, .layers { grid-template-columns: 1fr; }
+    .th .reach { margin-left: 0; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="bar">
+    <div class="mark">
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" fill="var(--accent)"/>
+        <g stroke="var(--accent)" stroke-width="1.6" opacity=".85">
+          <path d="M12 9V3M12 21v-6M9.5 10.5 4.8 6.5M19.2 17.5l-4.7-4M14.5 10.5l4.7-4M4.8 17.5l4.7-4"/>
+        </g>
+      </svg>
+      <span>cicy-hub <small id="host">hub.example.com</small></span>
+    </div>
+    <span class="spacer"></span>
+    <div class="conn sample" id="conn"><span class="dot"></span><span id="connlab"></span></div>
+    <div class="lang" role="group" aria-label="language">
+      <button data-lang="zh" type="button">中</button>
+      <button data-lang="en" type="button">EN</button>
+    </div>
+    <button class="tok" id="connectBtn" data-i18n="connect"></button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="lede">
+    <h1 data-i18n="h1"></h1>
+    <p data-i18n="lede"></p>
+  </div>
+
+  <div class="summary" id="summary"></div>
+  <div class="note" id="freshness"></div>
+
+  <div id="teams"></div>
+
+  <section class="auth">
+    <h2 data-i18n="auth_h2"></h2>
+    <div class="layers">
+      <div class="layer"><div class="n">typ=node</div><h3 data-i18n="l1t"></h3><p data-i18n="l1d"></p></div>
+      <div class="layer"><div class="n">typ=hub</div><h3 data-i18n="l2t"></h3><p data-i18n="l2d"></p></div>
+      <div class="layer"><div class="n">org</div><h3 data-i18n="l3t"></h3><p data-i18n="l3d"></p></div>
+    </div>
+    <p class="flow" data-i18n="flow"></p>
+  </section>
+</div>
+
+<dialog id="dlg">
+  <div class="dlg">
+    <h3 data-i18n="dlg_t"></h3>
+    <p data-i18n="dlg_d"></p>
+    <input id="tokIn" type="password" autocomplete="off" spellcheck="false"/>
+    <div class="row">
+      <button id="cancelBtn" data-i18n="cancel"></button>
+      <button class="primary" id="goBtn" data-i18n="load"></button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var LS = "cicy_hub_token", LSL = "cicy_hub_lang";
+
+  var T = {
+    en: {
+      connect: "Connect…", sample: "sample data", live: "live · ", loading: "loading…", loadfail: "load failed — check token",
+      h1: "One hub, every team — under one domain, one gate.",
+      lede: "Teams dial out and register a slug; each is reachable at < slug >.hub over one wildcard cert. Reach is gated by a hub token — a node's api-token never leaves its box.",
+      k_teams: "teams dialed in", k_agents: "agents total", k_online: "online now",
+      fresh_sample: "sample preview — Connect with a hub token to load the live directory.",
+      fresh_live: function (t, a) { return "live from /_agents · " + t + " teams, " + a + " agents."; },
+      c_status: "status", c_agent: "agent", c_title: "title", c_type: "type", c_model: "model", c_context: "context", agents: "agents",
+      s_working: "working", s_idle: "idle", s_offline: "offline", s_error: "error", s_unknown: "unknown",
+      auth_h2: "Authentication — all at this one hub",
+      l1t: "Who may dial in", l1d: "A team registers a slug only with a valid node token. Mint one per team: <code>hub enroll &lt;slug&gt;</code>.",
+      l2t: "Who may reach", l2d: "Every request to <code>&lt;slug&gt;.hub</code> must carry a hub token; the hub verifies it, the node's dialer swaps in the local api-token.",
+      l3t: "Tenant isolation", l3d: "Tokens carry an org. A hub token for one org can't see or reach another org's teams — the directory is scoped per tenant.",
+      flow: "<b>Reach path:</b> client <code>?token=&lt;hubToken&gt;</code> → hub verifies (else 401) → tunnel → node dialer injects the local api_token → cicy-code. The api_token works on localhost only; from the public hub it returns 401.",
+      dlg_t: "Connect to a live hub", dlg_d: "Paste a hub token to load the real directory from this hub. Stored in your browser only.",
+      ph: "hub token (typ=hub JWT)", cancel: "Cancel", load: "Load directory"
+    },
+    zh: {
+      connect: "连接…", sample: "示例数据", live: "实时 · ", loading: "加载中…", loadfail: "加载失败 — 检查 token",
+      h1: "一个 hub,所有团队 —— 一个域名,一道门。",
+      lede: "团队向外拨号、注册一个 slug;每个都在 < slug >.hub 可达,共用一张泛证书。访问由 hub token 把门 —— 节点的 api-token 永不离开本机。",
+      k_teams: "拨入的团队", k_agents: "agent 总数", k_online: "在线",
+      fresh_sample: "示例预览 —— 点「连接」贴 hub token 加载实时目录。",
+      fresh_live: function (t, a) { return "实时来自 /_agents · " + t + " 个团队," + a + " 个 agent。"; },
+      c_status: "状态", c_agent: "agent", c_title: "标题", c_type: "类型", c_model: "模型", c_context: "上下文", agents: "个 agent",
+      s_working: "工作中", s_idle: "空闲", s_offline: "离线", s_error: "错误", s_unknown: "未知",
+      auth_h2: "鉴权 —— 全在这一个 hub",
+      l1t: "谁能拨入", l1d: "团队只有拿到有效 node token 才能注册 slug。每个团队签一个:<code>hub enroll &lt;slug&gt;</code>。",
+      l2t: "谁能够到", l2d: "每个到 <code>&lt;slug&gt;.hub</code> 的请求都要带 hub token;hub 验它,节点拨号器再换成本地 api-token。",
+      l3t: "租户隔离", l3d: "token 带 org。一个 org 的 hub token 看不到、也够不到另一个 org 的团队 —— 目录按租户隔离。",
+      flow: "<b>reach 路径:</b>客户端 <code>?token=&lt;hubToken&gt;</code> → hub 验(否则 401)→ 隧道 → 节点拨号器注入本地 api_token → cicy-code。api_token 只在 localhost 有效;从公网 hub 一律 401。",
+      dlg_t: "连接到实时 hub", dlg_d: "贴一个 hub token,从这个 hub 加载真实目录。只存在你的浏览器里。",
+      ph: "hub token(typ=hub JWT)", cancel: "取消", load: "加载目录"
+    }
+  };
+
+  var lang = (function () { try { return localStorage.getItem(LSL) || ((navigator.language || "en").slice(0, 2) === "zh" ? "zh" : "en"); } catch (e) { return "en"; } })();
+  var lastData = null, lastLive = false, connMode = "sample";
+
+  function t(k) { return (T[lang] && T[lang][k]) != null ? T[lang][k] : T.en[k]; }
+  function esc(x) { return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
+  function statusClass(s) {
+    s = (s || "").toLowerCase();
+    if (s === "working" || s === "busy" || s === "thinking") return ["busy", "s_working"];
+    if (s === "error" || s === "failed") return ["err", "s_error"];
+    if (s === "offline") return ["off", "s_offline"];
+    if (s === "idle" || s === "completed" || s === "ok") return ["ok", "s_idle"];
+    return ["off", "s_unknown"];
+  }
+
+  var SAMPLE = { teams: [
+    { team: "mac13", org: "self", agents: [
+      { wid: "w-10122:main.0", title: "cicy cloud", agent_type: "claude", role: "worker", status: "working", model: "claude-opus-4-8", context_used_pct: 61 },
+      { wid: "w-10182:main.0", title: "协调官", agent_type: "cicy", role: "hub-coordinator", status: "idle", model: "big-pickle", context_used_pct: 8 },
+      { wid: "w-10036:main.0", title: "cicy-mobile", agent_type: "claude", role: "worker", status: "completed", model: "claude-haiku-4-5", context_used_pct: 30 },
+      { wid: "w-10142:main.0", title: "cicy-desktop", agent_type: "claude", role: "worker", status: "idle", model: "claude-sonnet-5", context_used_pct: 22 }
+    ]},
+    { team: "win10", org: "self", agents: [
+      { wid: "w-1:main.0", title: "Full-stack Engineer", agent_type: "codex", role: "worker", status: "working", model: "gpt-5-codex", context_used_pct: 44 },
+      { wid: "w-2:main.0", title: "Architect", agent_type: "claude", role: "master", status: "idle", model: "claude-opus-4-8", context_used_pct: 12 }
+    ]},
+    { team: "cicy-local", org: "self", agents: [
+      { wid: "w-104:main.0", title: "审计策略专员", agent_type: "cicy", role: "master", status: "idle", model: "deepseek-v4-pro", context_used_pct: 5 },
+      { wid: "w-112:main.0", title: "评测专员", agent_type: "cicy", role: "worker", status: "error", model: "deepseek-v4-pro", context_used_pct: 0 },
+      { wid: "w-10163:main.0", title: "libtv", agent_type: "claude", role: "worker", status: "offline", model: "—", context_used_pct: 0 }
+    ]}
+  ]};
+
+  function stat(n, extra, k) { return '<div class="stat"><div class="n mono">' + n + (extra || "") + '</div><div class="k">' + t(k) + '</div></div>'; }
+
+  function renderData() {
+    var data = lastData || SAMPLE, live = lastLive;
+    var host = live ? location.host : "hub.example.com";
+    $("#host").textContent = host;
+    var teams = data.teams || [], agents = 0, online = 0;
+    teams.forEach(function (x) { (x.agents || []).forEach(function (a) { agents++; var s = (a.status || "").toLowerCase(); if (s && s !== "offline") online++; }); });
+    $("#summary").innerHTML = stat(teams.length, "", "k_teams") + stat(agents, "", "k_agents") + stat(online, '<small> / ' + agents + '</small>', "k_online");
+
+    $("#teams").innerHTML = teams.map(function (tm) {
+      var reach = "https://" + tm.team + "." + host;
+      var rows = (tm.agents || []).map(function (a) {
+        var sc = statusClass(a.status), pct = Math.max(0, Math.min(100, Math.round(a.context_used_pct || 0))), isCicy = a.agent_type === "cicy";
+        return '<tr><td><span class="st ' + sc[0] + '"><span class="d"></span><span class="lab">' + esc(t(sc[1])) + '</span></span></td>' +
+          '<td class="mono">' + esc(a.wid) + '</td><td class="title">' + esc(a.title) + '</td>' +
+          '<td><span class="chip' + (isCicy ? ' cicy' : '') + '">' + esc(a.agent_type) + (a.role ? '·' + esc(a.role) : '') + '</span></td>' +
+          '<td class="mono">' + esc(a.model || "—") + '</td>' +
+          '<td><div class="ctx"><div class="track"><div class="fill" style="width:' + pct + '%"></div></div><span class="pct mono">' + pct + '%</span></div></td></tr>';
+      }).join("");
+      return '<section class="team"><div class="th"><span class="slug"><b>' + esc(tm.team) + '</b>.hub</span>' +
+        '<span class="org">' + esc(tm.org || "—") + '</span><span class="count">' + (tm.agents || []).length + ' ' + t("agents") + '</span>' +
+        '<span class="reach mono">' + esc(reach) + '</span></div><div class="scroll"><table><thead><tr>' +
+        '<th>' + t("c_status") + '</th><th>' + t("c_agent") + '</th><th>' + t("c_title") + '</th><th>' + t("c_type") + '</th><th>' + t("c_model") + '</th><th>' + t("c_context") + '</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+    }).join("");
+
+    if (connMode === "live" && lastData) $("#freshness").textContent = t("fresh_live")(data.team_count || teams.length, data.agent_count || agents);
+    else $("#freshness").textContent = t("fresh_sample");
+  }
+
+  function applyLang() {
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i18n]"), function (el) { el.innerHTML = t(el.getAttribute("data-i18n")); });
+    $("#tokIn").placeholder = t("ph");
+    Array.prototype.forEach.call(document.querySelectorAll(".lang button"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-lang") === lang ? "true" : "false"); });
+    setConn(connMode);
+    renderData();
+  }
+
+  function setConn(mode) {
+    connMode = mode;
+    var c = $("#conn"); c.className = "conn " + (mode === "live" ? "live" : "sample");
+    $("#connlab").textContent = mode === "live" ? t("live") + location.host : (mode === "loading" ? t("loading") : (mode === "err" ? t("loadfail") : t("sample")));
+  }
+
+  function loadLive(tok) {
+    setConn("loading");
+    fetch("/_agents", { headers: { Authorization: "Bearer " + tok } })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (d) { lastData = d; lastLive = true; setConn("live"); renderData(); })
+      .catch(function () { lastData = null; lastLive = false; setConn("err"); renderData(); try { localStorage.removeItem(LS); } catch (e) {} });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".lang button"), function (b) {
+    b.addEventListener("click", function () { lang = b.getAttribute("data-lang"); try { localStorage.setItem(LSL, lang); } catch (e) {} applyLang(); });
+  });
+  var dlg = $("#dlg");
+  $("#connectBtn").addEventListener("click", function () { try { dlg.showModal(); $("#tokIn").focus(); } catch (e) {} });
+  $("#cancelBtn").addEventListener("click", function () { dlg.close(); });
+  $("#goBtn").addEventListener("click", function () { var v = $("#tokIn").value.trim(); if (v) { try { localStorage.setItem(LS, v); } catch (e) {} dlg.close(); loadLive(v); } });
+  $("#tokIn").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#goBtn").click(); });
+
+  applyLang();
+  var saved = null; try { saved = localStorage.getItem(LS); } catch (e) {}
+  if (saved) loadLive(saved);
+})();
+</script>

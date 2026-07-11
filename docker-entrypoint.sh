@@ -107,6 +107,21 @@ case "$cmd" in
     echo "CICY_TUNNEL_URL=$url"
     echo "CICY_TUNNEL_TOKEN=$tok"
     ;;
+  grant)
+    # Mint a hub token (typ=hub) with THIS hub's own private key — the access
+    # credential a client presents to reach agents. The hub gates every request
+    # with it; the node's dialer swaps it for the local api_token. Self-signed
+    # and self-verified: no external issuer.
+    need_domain
+    ensure_keypair
+    ttl="${2:-$NODE_TTL}"
+    tok="$(mint hub -org "$ORG" -ttl "$ttl" -priv "$KEY")"
+    echo "# hub token — org=$ORG, ttl=$ttl. A client reaches any team in this org with it:"
+    echo "$tok"
+    echo
+    echo "#   https://<slug>.hub.$DOMAIN/?token=<token>"
+    echo "#   or  Authorization: Bearer <token>"
+    ;;
   info)
     need_domain
     ensure_keypair
@@ -114,7 +129,8 @@ case "$cmd" in
     echo "org:        $ORG"
     echo "tls_mode:   $TLS_MODE"
     echo "pub key:    $PUB"
-    echo "enroll a node:  docker compose exec hub enroll <slug>"
+    echo "add a team:      docker compose exec hub enroll <slug>"
+    echo "grant access:    docker compose exec hub grant [ttl]"
     ;;
   *)
     exec "$@"

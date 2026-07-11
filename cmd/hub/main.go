@@ -52,8 +52,9 @@ func main() {
 	rl.Mux.HandleFunc("/_presence", presenceReportHandler(pres, rl.Pub))
 	rl.Mux.HandleFunc("/_agents", presenceListHandler(pres, rl.Pub, hubDomain))
 	rl.Mux.HandleFunc("/_client", clientHandler(pres, rl.Reg, rl.Pub, hubDomain))
+	rl.Mux.HandleFunc("/_console", consoleHandler)
 	rl.Mux.HandleFunc("/_msg", msgHandler(rl.Reg, rl.Pub))
-	log.Printf("[hub] /_agents (snapshot) + /_client (live mobile WS) + /_msg (routing) — on the relay")
+	log.Printf("[hub] /_agents + /_client + /_console + /_msg — on the relay")
 
 	log.Fatal(rl.ListenAndServe())
 }
